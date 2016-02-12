@@ -31,6 +31,6 @@ main( int argc, char** argv ) {
   cin >> numIndividuals;
 
   pictureGA myPicture(numIndividuals);
-myPicture.go();
+  myPicture.go();
   return 0;
 }

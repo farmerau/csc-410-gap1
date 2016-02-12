@@ -39,7 +39,8 @@ individual {
     Postcondition: If the genome is not allocated or index >= numGenes,
     returns zero as an indicator
   */
-  int operator [] ( const unsigned int ) const;
+  int& operator [] ( const int ) ;
+  int get(int index);
 
   /*! \brief Returns the fitness of the individual */
   double get_my_fitness() const;

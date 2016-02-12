@@ -8,6 +8,7 @@ using namespace std;
 pictureGA::pictureGA( int popSize ) {
   numIndividuals = 0;
   generation = NULL;
+  srand(time(NULL));
   /*! 
     1. get the target picture with the default filename "picture.in"
     2. allocate the initial population and then randomize them.
@@ -22,6 +23,9 @@ pictureGA::pictureGA( int popSize ) {
   // We never actually ask them for the mutation rate, so I capture it.
   cout << "What is the desired mutation rate? ";
   cin >>  mutationRate; cout << "\n";
+  if (mutationRate >= 1){
+	mutationRate = mutationRate /100;
+  }
   // time to create the population. Allocate space and randomize
   generation = new individual[popSize];
   int minv = targetPicture[0][0]; //Temp Minimum variable
@@ -38,8 +42,8 @@ pictureGA::pictureGA( int popSize ) {
   }
   for( int i=0; i<popSize; i++ ) {
     generation[i].allocate_genome( nRows * nCols );
-    generation[i].randomize_genome();
     generation[i].set_max_min_values(maxv, minv);
+    generation[i].randomize_genome();
   }
   numIndividuals = popSize;
 
@@ -64,8 +68,10 @@ pictureGA::go() {
     roulettify();
     spawn();
     irradiate();
-    numGeneration ++;
+    numGeneration ++; 
+
   } while ( numGeneration < 100 && fitnessDifference > 0.9 );
+  cout << "Best fitness: " << bestfitness << "\n";
 }
 
 /***********************************************************
@@ -122,8 +128,15 @@ pictureGA::calculate_fitnesses() {
 	for (int i=0; i<numIndividuals; i++){
 		generation[i].calculate_fitness(targetPicture, nRows, nCols);
 		//This is just a summation of fitnesses.
+//		cout << "Fitness of individual " << i << " " << generation[i].get_my_fitness() << "\n";
 		avg += generation[i].get_my_fitness();
 	}
+//	cout << "Value of avg: " << avg << " numIndividuals: " << numIndividuals << "\n";
+	//cout << "Average fitness: " << avg/numIndividuals << ".\n";
+        if (avg/numIndividuals < bestfitness){
+		bestfitness = avg/numIndividuals;
+	}
+        //cout << "Best fitness: " << bestfitness << "\n";
 	return avg/numIndividuals; //Calculate average fitness before return
 }
 
@@ -132,51 +145,71 @@ pictureGA::roulettify() {
 
   double* rouletteValues = new double[numIndividuals];
   double rouletteSoFar(0);
+  int bestParent = 0;
+  int nextBest = 0;
   /// YOU MUST COMPLETE THIS FUNCTION
 
   // find the total fitness before dividing.
   double totalFitness = 0;
-  for( int i =0; i<numIndividuals; i++ ) 
-    totalFitness+=generation[i].get_my_fitness();
+  for( int i =0; i<numIndividuals; i++ ){
+    totalFitness+=(100-generation[i].get_my_fitness());
+    if (generation[i].get_my_fitness() < generation[bestParent].get_my_fitness()){
+		bestParent = i;
+    }
+    else if (generation[i].get_my_fitness() < generation[nextBest].get_my_fitness()){
+		nextBest = i;
+	}
+  }
 
   for( int i =0; i<numIndividuals; i++ ) 
     rouletteValues[i] = 0.0;
 
   for( int i =0; i<numIndividuals; i++ ) {
-    rouletteSoFar += generation[i].get_my_fitness()/totalFitness;
+    rouletteSoFar += (100-generation[i].get_my_fitness())/totalFitness;
     rouletteValues[i] = rouletteSoFar;
-//	cout << rouletteSoFar << " ";
+	cout << rouletteSoFar << " ";
   }
   
   // Once the roulette values are in place, find the parent indices
-  parent1 = 0;
-  parent2 = 0;
+parent1 = 0;
+parent2 = 0;
 
-	double select = ((double) rand() / (RAND_MAX)) + 1;
-	// This variable helps us make sure we don't select the same parent	
-	// twice.
-	select --; //This gives us a reasonable number for fitness.
-	for (int j = 0; j < numIndividuals; j++){
-		if (rouletteValues[j] <= select){
-		//If individual is at or below random fitness, they are now
-		//parent.
+double select = ((double) rand() / (RAND_MAX)) + 1;
+select --;
+cout << select << " selected .\n";
+for (int j = 0; j < numIndividuals; j++){
+	if (rouletteValues[j] <= select){
+		if (j > 0){
+			if (rouletteValues[j] > rouletteValues[j-1]){
+				parent1 = j;
+			}
+		}
+		else{
 			parent1 = j;
 		}
 	}
-	double oldselect = select;//This variable stores the old value so we
- 				//don't pick the same parent twice.
-	while (select == oldselect){
-		select = ((double) rand() / (RAND_MAX)) + 1;
-		select--;
-	}
+}
+do{
+	select = ((double) rand() / (RAND_MAX)) + 1;
+	select--;
 	for (int j = 0; j < numIndividuals; j++){
-		if (rouletteValues[j] <= select){
-			if (j != parent1){
+	if (rouletteValues[j] <= select){
+		if (j > 0){
+			if (rouletteValues[j] > rouletteValues[j-1]){
 				parent2 = j;
 			}
 		}
+		else{
+			parent2 = j;
+		}
 	}
+}
+}
+while (parent1 == parent2);
 
+  cout << "Results of roulette: Best Parent: " << bestParent << " Next Best: " << nextBest << " p1 " << parent1 << " p2 " << parent2 << "\n";
+  parent1 = bestParent;
+  parent2 = nextBest;
   // To find P1 and P2, we need to generate two random numbers from 0
   // to 100. Because the total of all the candidates' fitness is 100%,
   // picking somewhere in the range would give the parents. A nuance
@@ -188,11 +221,10 @@ pictureGA::roulettify() {
 void 
 pictureGA::spawn() {
   
-  unsigned int child1(0), child2(1);       // children indices
-  unsigned int p1(parent1), p2(parent2);   // parent indices
+  int p1(parent1), p2(parent2);   // parent indices
   unsigned int crossover(0);
   unsigned int i(0);
-  srand(time(NULL));
+ // srand(time(NULL));
   //srand needed to seed the random function.
   int * par1 = new int[nRows*nCols];//essentially a genome
   int * par2 = new int[nRows*nCols];//essentially a genome.
@@ -200,29 +232,41 @@ pictureGA::spawn() {
   //This for loop will copy the genomes from the selected parents. This
   //is necessary to prevent us from overloading the values inside the
   //population before we finish our breeding.
-  for (int z = 0; z < (nRows*nCols); z++){
+  for (unsigned int z = 0; z < (nRows*nCols); z++){
 	par1[z] = generation[p1][z];
+        //cout << p1 << "p1 :: " << z << "z :: " << generation[p1][z] << "p1z\n";
 	par2[z] = generation[p2][z];
+	//cout << p2 << "p2 :: " << z << "z :: " << generation[p2][z] << "p2z\n";
+  }
+  for (int z = 0; z < (nRows*nCols); z++){
+	//cout << par1[z] << ";";
+  }
+  //cout << "\n------------------------------\n";
+  for (int z = 0; z < (nRows*nCols); z++){
+	//cout << par2[z] << ";";
   }
 
  for (i; i < numIndividuals; i++){
-	do{
-		crossover =  ((int) rand() % (nRows*nCols));
+	//cout << "******************INDIVIDUAL " << i << "****************************\n";
+	do
+	{
+	crossover =  ((int) rand() % (nRows*nCols));
+	}
+		//WE NEED TO PREVENT CROSSOVER IN NONSENSE LOCATIONS
+	while ((crossover == (nRows*nCols)) || (crossover == 0));
+	//cout << crossover << "\n";
+	//THIS IS WHERE STUFF IS ABOUT TO GET MUDDY.
+	//WE'RE GOING TO DEAL WITH THE GENERATION OF TWO INDIVIDUALS
+	//PER LOOP, FOR THE SAKE OF CONSISTENT CROSSOV
+	for (unsigned int j = 0; j < (nRows*nCols); j++){
+		if (j <= crossover){
+			generation[i].set_value(par1[j], j);
 		}
-			//WE NEED TO PREVENT CROSSOVER IN NONSENSE LOCATIONS
-		while ((crossover == (nRows*nCols)) || (crossover == 0));
-		//THIS IS WHERE STUFF IS ABOUT TO GET MUDDY.
-		//WE'RE GOING TO DEAL WITH THE GENERATION OF TWO INDIVIDUALS
-		//PER LOOP, FOR THE SAKE OF CONSISTENT CROSSOVER.
-		for (unsigned int j = 0; j < (nRows*nCols); j++){
-			if (j <= crossover){
-				generation[i].set_value(par1[j], j);
-			}
-			else{
-				generation[i].set_value(par2[j], j);
-			}
+		else{
+			generation[i].set_value(par2[j], j);
 		}
-		if (i != (numIndividuals -1)){
+	}
+	if (i != (numIndividuals -1)){
 		i++;
 		for (unsigned int j = 0; j < (nRows*nCols); j++){
 			if (j <= crossover){
@@ -232,9 +276,10 @@ pictureGA::spawn() {
 				generation[i].set_value(par1[j], j);
 			}
 		}
-		}
+	}
+	//cout << "***************END INDIVIDUAL " << i << "*****************************\n";
 
-	} 
+} 
   /// YOU MUST COMPLETE THIS FUNCTION; the given variables are suggestions
 delete par1;
 delete par2;

@@ -84,6 +84,7 @@ pictureGA {
 
   unsigned int parent1;  //!< The first of the two best parents in roulettify 
   unsigned int parent2;  //!< The second of the two best parents in roulettify
+  double bestfitness = 1000; //This is to compare fitness for testing;
 
   /*! \brief These variables of the target picture */
   int** targetPicture;

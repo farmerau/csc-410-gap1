@@ -1,5 +1,8 @@
 #include "individual.h"
 #include <cstdlib> // for "NULL", "exit()"
+#include <iostream>
+
+using namespace std;
 
 individual::individual() { 
   myGenome = NULL; 
@@ -22,11 +25,18 @@ individual::~individual() {
   if( myGenome ) delete myGenome;
 }
 
-int
-individual::operator [] (const unsigned int index ) const { 
-  if( !myGenome ) return 0;
-  if( index > numGenes ) return 0;
+int&
+individual::operator [] (const int index ){ 
+  int o = 0;
+  if( !myGenome ) exit(0);
+  if( index > numGenes ) exit(0);
   return myGenome[index]; 
+}
+
+int individual::get(int index){
+ if ( !myGenome ) return 0;
+ if (index > numGenes ) return 0;
+ return myGenome[index];
 }
 
 double 
@@ -44,6 +54,7 @@ individual::set_max_min_values( const int max, const int min ) {
 void
 individual::set_value( const int value, const unsigned int index ) {
   if( index >= numGenes ) return;
+  //cout << "Set Gene " << index << " from " << myGenome[index] << " to " << value << ".\n";
   myGenome[index] = value;
 }
 
@@ -73,7 +84,7 @@ individual::allocate_genome( const unsigned int nGenes ) {
 
 void 
 individual::randomize_genome() {
-
+  
   /// If there is no genome space allocated, do not do anything. 
   if( !myGenome ) return;
 
@@ -84,9 +95,12 @@ individual::randomize_genome() {
   /// cstdlib) to find the range, multiply it by the difference
   /// between max and min values and then add it to minValue to get
   /// the correct scaled range.
+  //cout << "Inside";
   for( int i=0; i< numGenes; i++ ) {
     myGenome[i] = static_cast<int>(((rand()*1.0)/RAND_MAX)*(maxValue - minValue) + minValue);
+   // cout << myGenome[i] << " :: ";
   }
+ // cout << "\n";
 }
 
 
@@ -103,6 +117,7 @@ individual::calculate_fitness( int ** targetPicture,
 			       const unsigned int nRows, 
 			       const unsigned int nCols ) {
   /// if the genome is not defined, then skip this step.
+//	#include <stdio.h>
 	if( !myGenome ) return;
 	 double difference = 0.0;
 	//For each of the genes, we calculate the absolute value of the diff
@@ -111,9 +126,10 @@ individual::calculate_fitness( int ** targetPicture,
 	//another.
 	for (int i = 0; i<numGenes; i++){
 		difference += abs(myGenome[i]-targetPicture[i/nCols][i%nCols]);
+//		cout << "Difference between genome[" << i << "] and targetPicture[" << i/nCols << "][" << i%nCols << "] is " << myGenome[i] << " - " << targetPicture[i/nCols][i%nCols] << "\n";
 	}
  
-  myFitness = difference;
+  myFitness = difference/numGenes;
 }
 
 /// YOU MUST COMPLETE THIS FUNCTION
@@ -124,14 +140,19 @@ individual::calculate_fitness( int ** targetPicture,
 ///                be changed to a randomly allowed value.
 void
 individual::mutate( double const mRate ) {
-
+//cout << maxValue << " " << minValue << "\n";
   // Check to make sure that the genome exists before trying to
   // manipulate it.
  	if( !myGenome ) return;
 	for(int i = 0; i<numGenes; i++){
-		//If the gene is below the mutation rate, mutate it. 
-		if (myGenome[i]<mRate){
+		//If the gene is below the mutation rate, mutate it.
+		double randomNumber = (rand()*1.0)/RAND_MAX;
+//		cout << mRate << " ";
+//		cout << randomNumber; 
+		if (randomNumber<mRate){
+//			cout << "Mutation from " << myGenome[i];
 			myGenome[i] = static_cast<int>(((rand()*1.0)/RAND_MAX)*(maxValue - minValue) + minValue);
+//			cout << " to " << myGenome[i] << "\n";
 		}
 	}
   // go throughout the gene and, given a random probability, assign a gene to 
