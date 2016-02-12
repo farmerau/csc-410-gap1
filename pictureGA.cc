@@ -70,7 +70,7 @@ pictureGA::go() {
     irradiate();
     numGeneration ++; 
 
-  } while ( numGeneration < 100 && fitnessDifference > 0.9 );
+  } while ( numGeneration < 10000000 && fitnessDifference > 0.9 );
   cout << "Best fitness: " << bestfitness << "\n";
 }
 
@@ -167,7 +167,7 @@ pictureGA::roulettify() {
   for( int i =0; i<numIndividuals; i++ ) {
     rouletteSoFar += (100-generation[i].get_my_fitness())/totalFitness;
     rouletteValues[i] = rouletteSoFar;
-	cout << rouletteSoFar << " ";
+	//cout << rouletteSoFar << " ";
   }
   
   // Once the roulette values are in place, find the parent indices
@@ -208,7 +208,7 @@ do{
 while (parent1 == parent2);
 
   cout << "Results of roulette: Best Parent: " << bestParent << " Next Best: " << nextBest << " p1 " << parent1 << " p2 " << parent2 << "\n";
-  parent1 = bestParent;
+ parent1 = bestParent;
   parent2 = nextBest;
   // To find P1 and P2, we need to generate two random numbers from 0
   // to 100. Because the total of all the candidates' fitness is 100%,
